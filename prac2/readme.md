@@ -42,7 +42,7 @@ yunikeil@lekinu3600:~$ docker ps -a -q
 
 ## Определить образ операционной системы для контейнера.
 
-Образ системы - alpine:latest
+Образ системы - `alpine:latest`
 
 ##  Получить образ выбранной операционной системы и версии с репозитория DockerHub.
 
@@ -69,16 +69,16 @@ Linux
 ```shell
 yunikeil@lekinu3600:/mnt/f/ISEnt/prac2$ docker build -t hello-world-image .
 [+] Building 0.1s (5/5) FINISHED                                                                                                                                                                      docker:default
- => [internal] load build definition from Dockerfile                                                                                                                                                            0.0s
- => => transferring dockerfile: 97B                                                                                                                                                                             0.0s
- => [internal] load metadata for docker.io/library/alpine:latest                                                                                                                                                0.0s
- => [internal] load .dockerignore                                                                                                                                                                               0.0s
- => => transferring context: 2B                                                                                                                                                                                 0.0s
- => [1/1] FROM docker.io/library/alpine:latest                                                                                                                                                                  0.0s
- => exporting to image                                                                                                                                                                                          0.0s
- => => exporting layers                                                                                                                                                                                         0.0s
- => => writing image sha256:b47bebce16810e480a6b91112c8db8447cc92ceb78261fe8fa68d3467a2198b9                                                                                                                    0.0s
- => => naming to docker.io/library/hello-world-image                                                                                                                                                            0.0s
+ => [internal] load build definition from Dockerfile
+ => => transferring dockerfile: 97B
+ => [internal] load metadata for docker.io/library/alpine:latest
+ => [internal] load .dockerignore
+ => => transferring context: 2B
+ => [1/1] FROM docker.io/library/alpine:latest
+ => exporting to image
+ => => exporting layers
+ => => writing image sha256:b47bebce16810e480a6b91112c8db8447cc92ceb78261fe8fa68d3467a2198b9
+ => => naming to docker.io/library/hello-world-image
 yunikeil@lekinu3600:/mnt/f/ISEnt/prac2$ docker run --name hello-world-container hello-world-image
 'Hello world'
 ```
@@ -86,7 +86,7 @@ yunikeil@lekinu3600:/mnt/f/ISEnt/prac2$ docker run --name hello-world-container 
 
 ## Добавить в контейнер прикладное программное обеспечение, например, образ web-сервера nginx.
 
-В контейнер [Dockerfile.nginx](Dockerfile.nginx) был добавлен nginx.
+В контейнер [Dockerfile](Dockerfile) был добавлен nginx: [Dockerfile.nginx](Dockerfile.nginx).
 ```shell
 yunikeil@lekinu3600:/mnt/f/ISEnt/prac2$ docker build -t nginx-alpine -f Dockerfile.nginx .
 [+] Building 0.1s (6/6) FINISHED
@@ -116,6 +116,7 @@ yunikeil@lekinu3600:/mnt/f/ISEnt/prac2$ curl localhost:8080
 
 ## Создать с использованием инструкций DockerFile новый контейнер, содержащий не менее пяти слоев.
 
+Был также создан новый контейнер с 5 слоями: [Dockerfile.five](Dockerfile.five).
 ```shell
 yunikeil@lekinu3600:/mnt/f/ISEnt/prac2$ docker build -t my-alpine-nginx -f Dockerfile.five .
 [+] Building 0.1s (10/10) FINISHED
