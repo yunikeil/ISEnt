@@ -1,0 +1,11 @@
+sqlalchemy[asyncio]
+asyncpg
+alembic
+
+python-dotenv
+pydantic
+pydantic-settings
+
+pytest
+
+colorlog

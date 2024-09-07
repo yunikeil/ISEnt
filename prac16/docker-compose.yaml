@@ -1,0 +1,85 @@
+
+x-nginx-authprac: &base-nginx
+  image: nginx:alpine
+  restart: always
+  networks:
+    - authprac-network
+  depends_on:
+    - pgadmin-authprac
+  entrypoint: ["/nginx_entrypoint.sh"]
+  command: ["nginx", "-g", "daemon off;"]
+
+services:
+  app-authprac:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    networks:
+      - authprac-network
+    depends_on:
+      db-authprac:
+        condition: service_healthy
+    command:
+      - "sh"
+      - "-c"
+      - |
+        alembic upgrade head
+        python3 src/main.py
+    profiles: 
+      - base
+
+  db-authprac:
+    image: postgres:16.3-alpine3.20
+    environment:
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - authprac-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles: 
+      - base
+
+  pgadmin-authprac:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    ports:
+      - ${INTERNAL_IP}:81:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    depends_on:
+      - db-authprac
+    networks:
+      - authprac-network
+    profiles: 
+      - base
+    
+  nginx_ports-authprac:
+    <<: *base-nginx
+    profiles:
+      - with_port
+    ports:
+      - ${EXTERNAL_IP}:81:81
+      - ${EXTERNAL_IP}:91:91
+    volumes:
+      - ./config/nginx.ports.conf:/etc/nginx/nginx.conf.template
+      - ./scripts/nginx_entrypoint.sh:/nginx_entrypoint.sh
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
+
+
+networks:
+  authprac-network:
+
+volumes:
+  postgres-data:
+  pgadmin-data:
