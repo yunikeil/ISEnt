@@ -13,9 +13,13 @@ services:
   app-authprac:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dev.Dockerfile
+    volumes:
+      - ./:/authprac
     networks:
       - authprac-network
+    ports:
+      - ${INTERNAL_IP}:8080:8080
     depends_on:
       db-authprac:
         condition: service_healthy
@@ -23,9 +27,8 @@ services:
       - "sh"
       - "-c"
       - |
-        alembic upgrade head
-        python3 src/main.py
-    profiles: 
+        python3 src/main.py 
+    profiles: # alembic upgrade head
       - base
 
   db-authprac:
@@ -50,7 +53,7 @@ services:
     image: dpage/pgadmin4:latest
     restart: unless-stopped
     ports:
-      - ${INTERNAL_IP}:81:80
+      - ${INTERNAL_IP}:8090:80
     environment:
       - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
       - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
@@ -66,10 +69,10 @@ services:
   nginx_ports-authprac:
     <<: *base-nginx
     profiles:
-      - with_port
+      - base
     ports:
-      - ${EXTERNAL_IP}:81:81
-      - ${EXTERNAL_IP}:91:91
+      - ${EXTERNAL_IP}:80:80 # back
+      - ${EXTERNAL_IP}:81:81 # pgadm
     volumes:
       - ./config/nginx.ports.conf:/etc/nginx/nginx.conf.template
       - ./scripts/nginx_entrypoint.sh:/nginx_entrypoint.sh

@@ -1,3 +1,6 @@
+fastapi
+uvicorn
+
 sqlalchemy[asyncio]
 asyncpg
 alembic
@@ -7,5 +10,6 @@ pydantic
 pydantic-settings
 
 pytest
+httpx
 
 colorlog
