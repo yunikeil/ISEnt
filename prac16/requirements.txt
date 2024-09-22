@@ -4,12 +4,23 @@ uvicorn
 sqlalchemy[asyncio]
 asyncpg
 alembic
+redis
 
 python-dotenv
 pydantic
 pydantic-settings
+email-validator
+
+aiosmtplib
+Jinja2
 
 pytest
 httpx
+
+python-multipart
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt==4.0.1
+
 
 colorlog

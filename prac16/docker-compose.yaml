@@ -6,6 +6,7 @@ x-nginx-authprac: &base-nginx
     - authprac-network
   depends_on:
     - pgadmin-authprac
+    - app-authprac
   entrypoint: ["/nginx_entrypoint.sh"]
   command: ["nginx", "-g", "daemon off;"]
 
@@ -23,12 +24,15 @@ services:
     depends_on:
       db-authprac:
         condition: service_healthy
+      redis-authprac:
+        condition: service_healthy
     command:
       - "sh"
       - "-c"
       - |
-        python3 src/main.py 
-    profiles: # alembic upgrade head
+        alembic upgrade head
+        python3 src/main.py
+    profiles:
       - base
 
   db-authprac:
@@ -65,7 +69,18 @@ services:
       - authprac-network
     profiles: 
       - base
-    
+
+  redis-authprac:
+    image: redis:alpine
+    networks:
+      - authprac-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+
   nginx_ports-authprac:
     <<: *base-nginx
     profiles:

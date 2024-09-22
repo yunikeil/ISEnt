@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import field_validator, PostgresDsn, SecretStr
+from pydantic import RedisDsn, PostgresDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
 
@@ -19,9 +19,21 @@ class __Settings(BaseSettings):
     DATABASE_CONNECTION_APP_NAME: str
     DATABASE_USERNAME: str
     DATABASE_PASSWORD: SecretStr
-    
+
     _PGADMIN_DEFAULT_EMAIL: str
     _PGADMIN_DEFAULT_PASSWORD: SecretStr
+
+    REDIS_HOST: str
+
+    SMTP_ADRESS: str
+    SMTP_SSL_PORT: int
+    USER_VERIFY_LOGIN: str
+    USER_VERIFY_PASSWORD: SecretStr
+
+    SMTP_ADRESS: str
+    SMTP_SSL_PORT: int
+    PASSWORD_RESET_LOGIN: str
+    PASSWORD_RESET_PASSWORD: SecretStr
 
     @property
     def DATABASE_URL(self) -> PostgresDsn:
@@ -32,6 +44,13 @@ class __Settings(BaseSettings):
             host=self.DATABASE_HOST,
             port=self.DATABASE_PORT,
             path=self.DATABASE_NAME,
+        )
+
+    @property
+    def REDIS_URL(self) -> RedisDsn:
+        return  RedisDsn.build(
+            scheme="redis",
+            host=self.REDIS_HOST,
         )
 
     model_config = SettingsConfigDict(

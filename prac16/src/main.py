@@ -13,10 +13,11 @@ from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 
-from core.logging.helpers import create_logger
-from core.logging.handlers import ErrorHandlerTG
 from core.database.session import test_pg_connection
+from core.redis.client import get_redis_client
 from core.settings import config
+
+from app.routers import user_router, auth_router
 
 
 security = HTTPBasic()
@@ -30,9 +31,12 @@ origins = [
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     uvi_access_logger = logging.getLogger("uvicorn.access")
-    logger = logging.getLogger("uvicorn")
+    uvi_base_logger = logging.getLogger("uvicorn")
 
-    await  test_pg_connection()
+    async with get_redis_client() as client:
+        await client.ping()
+
+    await test_pg_connection()
 
     yield
 
@@ -48,6 +52,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(user_router)
+app.include_router(auth_router)
 
 
 def __temp_get_current_username(
@@ -78,7 +85,7 @@ async def redirect_root():
 
 
 @app.get("/docs", include_in_schema=False)
-async def get_swagger_documentation():
+async def get_swagger_documentation(_: str = Depends(__temp_get_current_username)):
     return get_swagger_ui_html(openapi_url="/openapi.json", title="docs")
 
 
