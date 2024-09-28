@@ -1,0 +1,154 @@
+
+x-nginx-authprac: &base-nginx
+  image: nginx:alpine
+  restart: always
+  networks:
+    - authprac-network
+  depends_on:
+    - pgadmin-authprac
+    - app-authprac
+  entrypoint: ["/nginx_entrypoint.sh"]
+  command: ["nginx", "-g", "daemon off;"]
+
+services:
+  app-authprac:
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    volumes:
+      - ./:/authprac
+    networks:
+      - authprac-network
+    ports:
+      - ${INTERNAL_IP}:8080:8080
+    depends_on:
+      db-authprac:
+        condition: service_healthy
+      redis-authprac:
+        condition: service_healthy
+    command:
+      - "sh"
+      - "-c"
+      - |
+        alembic upgrade head
+        python3 src/main.py
+    profiles:
+      - base
+
+  db-authprac:
+    image: postgres:16.3-alpine3.20
+    environment:
+      - POSTGRES_USER=${DATABASE_USERNAME}
+      - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
+      - POSTGRES_DB=${DATABASE_NAME}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - authprac-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - base
+
+  pgadmin-authprac:
+    image: dpage/pgadmin4:latest
+    restart: unless-stopped
+    ports:
+      - ${INTERNAL_IP}:8090:80
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${PGADMIN_DEFAULT_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./config/servers.json:/pgadmin4/servers.json
+      - ./config/pgpass:/pgpass
+    depends_on:
+      - db-authprac
+    networks:
+      - authprac-network
+    profiles:
+      - base
+
+  redis-authprac:
+    image: redis:alpine
+    networks:
+      - authprac-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+
+  celery-broker-authprac:
+    image: redis:alpine
+    networks:
+      - authprac-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 30s
+      retries: 50
+      start_period: 30s
+    profiles:
+      - base
+
+  flower-authprac:
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
+    command: celery --broker=redis://celery-broker-authprac:6379 flower --port=5555
+    ports:
+      - ${INTERNAL_IP}:5555:5555
+    depends_on:
+      - celery-broker-authprac
+    networks:
+      - authprac-network
+    environment:
+      - FLOWER_BASIC_AUTH=${FLOWER_USERNAME}:${FLOWER_PASSWORD}
+    profiles:
+      - base
+
+  celery-worker-authprac:
+    build:
+      context: .
+      dockerfile: worker.Dockerfile
+    command:
+        - "sh"
+        - "-c"
+        - "cd src && celery -A worker.config.celery worker --loglevel=info"
+    environment:
+      - CELERY_BROKER_URL=redis://celery-broker-authprac
+      - CELERY_RESULT_BACKEND=redis://celery-broker-authprac
+    depends_on:
+      - redis-authprac
+      - db-authprac
+    networks:
+      - authprac-network
+    profiles:
+      - base
+
+  nginx_ports-authprac:
+    <<: *base-nginx
+    profiles:
+      - base
+    ports:
+      - ${EXTERNAL_IP}:80:80 # back
+      - ${EXTERNAL_IP}:81:81 # pgadm
+      - ${EXTERNAL_IP}:82:82 # flow
+    volumes:
+      - ./config/nginx.ports.conf:/etc/nginx/nginx.conf.template
+      - ./scripts/nginx_entrypoint.sh:/nginx_entrypoint.sh
+    environment:
+      - BASE_DOMAIN=${BASE_DOMAIN}
+
+
+networks:
+  authprac-network:
+
+volumes:
+  postgres-data:
+  pgadmin-data:
