@@ -102,5 +102,4 @@ if __name__ == "__main__":
         host="app-authprac",
         port=8080,
         reload=config.RELOAD,
-        proxy_headers=True,
     )

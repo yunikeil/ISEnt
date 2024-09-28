@@ -1,3 +1,7 @@
+from datetime import datetime
+from typing import Literal
+from uuid import UUID
+
 from pydantic import BaseModel, EmailStr
 
 
@@ -24,3 +28,9 @@ class UserUpdateEmail(BaseModel):
 class UserSelfDelete(BaseModel):
     pass
 
+
+class TokenData(BaseModel):
+    user_id: int
+    token_type: Literal["access", "refresh"]
+    exp: datetime
+    session: UUID

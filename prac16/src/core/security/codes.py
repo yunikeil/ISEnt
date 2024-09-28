@@ -1,65 +1,53 @@
 from typing import Literal, cast
 import random
 
+from fastapi.exceptions import HTTPException
+from starlette import status
+
 from core.redis.client import get_redis_client
 
-
-async def generate_secret_number(length: int = 4) -> int:
-    min_value = 10 ** (length - 1)
-    max_value = (10 ** length) - 1
-    return random.randint(min_value, max_value)
+CodesContextT = Literal["new_user_verify", "old_user_login"]
 
 
-async def verify_code(
-    user_id: int,
-    code: int,
-    context: Literal[
-        "verify_email", "verify_password", "verify_old_email", "verify_new_email"
-    ],
-):
-    right_code, data = await get_code_data_from_redis(user_id=user_id, context=context)
-    if code == right_code:
-        await delete_code_data_from_redis(user_id, context)
-        return True, cast(bytes, data).decode() if data else None
+class Codes:
+    @staticmethod
+    def _generate_secret_number(length: int = 4) -> int:
+        min_value = 10 ** (length - 1)
+        max_value = (10 ** length) - 1
+        return random.randint(min_value, max_value)
 
-    return False, None
+    @classmethod
+    async def verify(
+        cls, user_id: int, code: int, context: CodesContextT,
+    ):
+        right_code, data = await cls.get(user_id=user_id, context=context)
+        if code == right_code:
+            await cls.delete(user_id, context)
+            return True, cast(bytes, data).decode() if data else None
 
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
-async def generate_and_add_code_data_to_redis(
-    user_id: int,
-    context: Literal[
-        "verify_email", "verify_password", "verify_old_email", "verify_new_email"
-    ],
-    data: str = "NaN",
-    ttl: int = 900,
-):
-    async with get_redis_client() as redis:
-        code = await generate_secret_number()
-        await redis.setex(f"{user_id}:{context}", ttl, f"{code}:{data}")
+    @classmethod
+    async def generate(
+        cls, user_id: int, context: CodesContextT, data: str = "NaN", ttl: int = 900,
+    ):
+        async with get_redis_client() as redis:
+            code = cls._generate_secret_number()
+            await redis.setex(f"{user_id}:{context}", ttl, f"{code}:{data}")
 
-    return code
+        return code
 
+    @staticmethod
+    async def delete(user_id: int, context: CodesContextT):
+        async with get_redis_client() as redis:
+            await redis.delete(f"{user_id}:{context}")
 
-async def delete_code_data_from_redis(
-    user_id: int,
-    context: Literal[
-        "verify_email", "verify_password", "verify_old_email", "verify_new_email"
-    ],
-):
-    async with get_redis_client() as redis:
-        await redis.delete(f"{user_id}:{context}")
+    @staticmethod
+    async def get(user_id: int, context: CodesContextT):
+        async with get_redis_client() as redis:
+            result: str = await redis.get(f"{user_id}:{context}")
+            if result:
+                code, data = result.split(b":")
+                return int(code), data if data != b"NaN" else None
 
-
-async def get_code_data_from_redis(
-    user_id: int,
-    context: Literal[
-        "verify_email", "verify_password", "verify_old_email", "verify_new_email"
-    ],
-):
-    async with get_redis_client() as redis:
-        result: str = await redis.get(f"{user_id}:{context}")
-        if result:
-            code, data = result.split(b":")
-            return int(code), data if data != b"NaN" else None
-
-        return None, None
+            return None, None

@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from core.settings import config
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
@@ -24,9 +24,12 @@ engine = create_async_engine(
     },
     echo=config.ECHO_SQL
 )
-async_session = sessionmaker(
-    bind=engine, class_=AsyncSession, expire_on_commit=False
-)
+async_session = async_sessionmaker(bind=engine, expire_on_commit=False)
+
+
+async def get_pg_session() -> AsyncGenerator[AsyncSession, None]:
+    async with async_session() as db_session:
+        yield db_session
 
 
 @asynccontextmanager
@@ -41,11 +44,11 @@ def provide_pg_session(
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         async with context_get_pg_session() as db_session:
-            return await func(*args, db_session=db_session, **kwargs)
+            return await func(*args, session=db_session, **kwargs)
     return wrapper
 
 @provide_pg_session
-async def test_pg_connection(db_session: AsyncSession):
-    result = await db_session.execute(select(1))
+async def test_pg_connection(session: AsyncSession):
+    result = await session.execute(select(1))
     return f"PostgreSQL `SELECT(1)` returned: {result.scalar()}"
 

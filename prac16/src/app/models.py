@@ -11,5 +11,3 @@ class User(Base):
     username = Column(String(50), index=True, unique=True, nullable=False)
     email = Column(String(75), index=True, unique=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
-
-

@@ -6,6 +6,9 @@ asyncpg
 alembic
 redis
 
+celery
+flower
+
 python-dotenv
 pydantic
 pydantic-settings

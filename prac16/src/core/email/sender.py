@@ -3,7 +3,7 @@ from email.mime.text import MIMEText
 from email.header import Header
 from email.utils import formataddr
 import logging
-import os
+from pathlib import Path
 
 import aiosmtplib
 from jinja2 import Environment, FileSystemLoader
@@ -11,10 +11,9 @@ from jinja2 import Environment, FileSystemLoader
 from core.settings import  config
 
 logger = logging.getLogger("uvicorn")
-current_file_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-locales_path = os.path.join(os.path.dirname(current_file_path), "templates")
+templates = Path(__file__).parents[2] / "templates"
 
-
+# Логику пуллов бы сюда, но да ладно
 class AsyncEmailSender:
     def __init__(self, smtp_server, smtp_port, username, password):
         self.smtp_server = smtp_server
@@ -48,12 +47,8 @@ class AsyncEmailSender:
 
 
 async def render_auth_template(template_file, data: dict, **kwargs):
-    if not data.get("debug"):
-        data["debug"] = config.DEBUG
-
-    # Используется для дебага, чтобы изменить директорию для поиска файлов
     if not (path := kwargs.get("templates_path")):
-        env = Environment(loader=FileSystemLoader(locales_path), enable_async=True)
+        env = Environment(loader=FileSystemLoader(templates), enable_async=True)
     else:
         env = Environment(loader=FileSystemLoader(path), enable_async=True)
 
