@@ -47,11 +47,28 @@ async def get_user(_: ActiveUserDep, user_id: int):
     return UserSchema(**user.to_dict())
 
 
-@auth_router.post("/me/verify")
+@auth_router.post("/verify/new")
 async def verify_new_user(email: EmailStr, code: int):
     user = await Users.get_user_by_email(email)
     await Codes.verify(user.id, code, "new_user_verify")
     user = await Users.verify_user(user.id)
+    response = JSONResponse(UserSchema(**user.to_dict()).model_dump())
+    response.set_cookie("access", create_jwt_token(user.id, "access"))
+    return response
+
+
+@auth_router.post("/send-login")
+async def request_login_user(email: EmailStr):
+    user = await Users.get_user_by_email(email)
+    code = await Codes.generate(user.id, "old_user_login")
+    send_user_verify_message.delay(email, code)
+    return Response(status_code=status.HTTP_201_CREATED)
+
+
+@auth_router.post("/verify/me")
+async def check_user_login(email: EmailStr, code: int):
+    user = await Users.get_user_by_email(email)
+    await Codes.verify(user.id, code, "old_user_login")
     response = JSONResponse(UserSchema(**user.to_dict()).model_dump())
     response.set_cookie("access", create_jwt_token(user.id, "access"))
     return response
