@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поиск событий</title>
+    <script>
+        async function fetchEvents() {
+            const event = document.getElementById('event').value;
+            const url = `http://localhost:8000/event_list_?event_=${encodeURIComponent(event)}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                const resultContainer = document.getElementById('results');
+                resultContainer.innerHTML = '';
+
+                if (data.length > 0) {
+                    data.forEach(event => {
+                        const eventElement = document.createElement('li');
+                        eventElement.textContent = event;
+                        resultContainer.appendChild(eventElement);
+                    });
+                } else {
+                    resultContainer.innerHTML = '<li>События не найдены</li>';
+                }
+            } catch (error) {
+                console.error('Ошибка при получении данных:', error);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const eventInput = document.getElementById('event');
+            eventInput.addEventListener('input', fetchEvents);
+        });
+    </script>
+</head>
+<body>
+    <h1>Поиск событий</h1>
+    <label for="event">Введите слово для поиска:</label>
+    <input type="text" id="event" name="event" placeholder="Введите слово...">
+
+    <h2>Результаты поиска:</h2>
+    <ul id="results">
+
+    </ul>
+</body>
+</html>
