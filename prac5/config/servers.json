@@ -1,0 +1,15 @@
+{
+    "Servers": {
+        "1": {
+            "Group": "Docker Servers",
+            "Name": "db-authprac database",
+            "Host": "db-authprac",
+            "Port": 5432,
+            "MaintenanceDB": "authprac",
+            "Username": "postgres",
+            "Password": "postgres",
+            "SSLMode": "prefer",
+            "Favorite": true
+        }
+    }
+}
