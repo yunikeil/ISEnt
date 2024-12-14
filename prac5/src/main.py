@@ -2,6 +2,7 @@ import os
 import json
 import logging
 import secrets
+from http.cookiejar import debug
 from typing import Annotated
 from contextlib import asynccontextmanager
 
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     openapi_url=None,
     lifespan=lifespan,
+    debug=True,
 )
 app.add_middleware(
     CORSMiddleware,
