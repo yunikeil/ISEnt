@@ -72,3 +72,87 @@ async def check_user_login(email: EmailStr, code: int):
     response = JSONResponse(UserSchema(**user.to_dict()).model_dump())
     response.set_cookie("access", create_jwt_token(user.id, "access"))
     return response
+
+
+from fastapi import APIRouter, Depends, status
+from starlette.responses import Response, JSONResponse
+
+from app.schemas import (
+    WriterSchema,
+    WriterCreate,
+    WriterUpdate,
+    BookSchema,
+    BookCreate,
+    BookUpdate,
+    PublisherSchema,
+    PublisherCreate,
+    PublisherUpdate,
+)
+from app.services import WriterService, BookService, PublisherService
+
+writer_router = APIRouter(prefix="/writers", tags=["Writers"])
+book_router = APIRouter(prefix="/books", tags=["Books"])
+publisher_router = APIRouter(prefix="/publishers", tags=["Publishers"])
+
+# Writer Routes
+@writer_router.get("/{writer_id}", response_model=WriterSchema)
+async def get_writer(writer_id: int):
+    writer = await WriterService.get_writer_by_id(writer_id)
+    return writer
+
+@writer_router.post("/", response_model=WriterSchema, status_code=status.HTTP_201_CREATED)
+async def create_writer(writer_data: WriterCreate):
+    writer = await WriterService.create_writer(writer_data)
+    return writer
+
+@writer_router.put("/{writer_id}", response_model=WriterSchema)
+async def update_writer(writer_id: int, writer_data: WriterUpdate):
+    writer = await WriterService.update_writer(writer_id, writer_data)
+    return writer
+
+@writer_router.delete("/{writer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_writer(writer_id: int):
+    await WriterService.delete_writer(writer_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# Book Routes
+@book_router.get("/{book_id}", response_model=BookSchema)
+async def get_book(book_id: int):
+    book = await BookService.get_book_by_id(book_id)
+    return book
+
+@book_router.post("/", response_model=BookSchema, status_code=status.HTTP_201_CREATED)
+async def create_book(book_data: BookCreate):
+    book = await BookService.create_book(book_data)
+    return book
+
+@book_router.put("/{book_id}", response_model=BookSchema)
+async def update_book(book_id: int, book_data: BookUpdate):
+    book = await BookService.update_book(book_id, book_data)
+    return book
+
+@book_router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_book(book_id: int):
+    await BookService.delete_book(book_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# Publisher Routes
+@publisher_router.get("/{publisher_id}", response_model=PublisherSchema)
+async def get_publisher(publisher_id: int):
+    publisher = await PublisherService.get_publisher_by_id(publisher_id)
+    return publisher
+
+@publisher_router.post("/", response_model=PublisherSchema, status_code=status.HTTP_201_CREATED)
+async def create_publisher(publisher_data: PublisherCreate):
+    publisher = await PublisherService.create_publisher(publisher_data)
+    return publisher
+
+@publisher_router.put("/{publisher_id}", response_model=PublisherSchema)
+async def update_publisher(publisher_id: int, publisher_data: PublisherUpdate):
+    publisher = await PublisherService.update_publisher(publisher_id, publisher_data)
+    return publisher
+
+@publisher_router.delete("/{publisher_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_publisher(publisher_id: int):
+    await PublisherService.delete_publisher(publisher_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -13,12 +13,11 @@ from starlette import status
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 
-from core.database.session import test_pg_connection
+from core.database.session import test_pg_connection, provide_pg_session
 from core.redis.client import get_redis_client
 from core.settings import config
 
-from app.routers import user_router, auth_router
-
+from app.routers import user_router, auth_router, writer_router, book_router, publisher_router
 
 security = HTTPBasic()
 origins = [
@@ -55,6 +54,9 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(writer_router)
+app.include_router(book_router)
+app.include_router(publisher_router)
 
 
 def __temp_get_current_username(
@@ -79,9 +81,19 @@ def __temp_get_current_username(
     return credentials.username
 
 
-@app.get("/", include_in_schema=False)
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+
+
+@provide_pg_session
+async def get_all(session: AsyncSession):
+    r = await session.execute(text("select * from my_table"))
+    return [list(row) for row in r.all()]
+
+@app.get("/")
 async def redirect_root():
-    return RedirectResponse(url="/docs")
+    return await get_all()
+
 
 
 @app.get("/docs", include_in_schema=False)
