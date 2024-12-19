@@ -1,0 +1,20 @@
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+    container_name: nginx_prac
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+
+  app:
+    build:
+      context: .
+      dockerfile: app.Dockerfile
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
